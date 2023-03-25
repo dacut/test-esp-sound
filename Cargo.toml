@@ -1,0 +1,12 @@
+[package]
+name = "test-esp-sound"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+esp-idf-hal = { path = "../esp-idf-hal" }
+
+[build]
+rustflags = "--cfg espidf_time64"
