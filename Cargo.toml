@@ -3,16 +3,25 @@ name = "test-esp-sound"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+authors = ["David Cuthbert <dacut@kanga.org>"]
+homepage = "https://github.com/dacut/test-esp-sound"
+license = "Apache-2.0"
+readme = "README.md"
+repository = "https://github.com/dacut/test-esp-sound"
+
+[patch.crates-io]
+esp-idf-hal = { git = "https://github.com/dacut/esp-idf-hal", branch = "i2s" }
+esp-idf-sys = { git = "https://github.com/dacut/esp-idf-sys", branch = "i2s" }
+embuild = { git = "https://github.com/esp-rs/embuild.git" }
 
 [dependencies]
-esp-idf-hal = { path = "../esp-idf-hal" }
-esp-idf-sys = { path = "../esp-idf-sys", features = [ "std", "native", "binstart" ] }
+esp-idf-hal = { git = "https://github.com/dacut/esp-idf-hal", branch = "i2s" }
+esp-idf-sys = { git = "https://github.com/dacut/esp-idf-sys", branch = "i2s", features = [ "std", "native", "binstart" ] }
 
 [profile.dev]
 debug = true
 opt-level = "z"
 
 [build-dependencies]
-embuild = { path = "../embuild", features = ["elf"] }
+embuild = { git = "https://github.com/esp-rs/embuild.git", features = ["elf"] }
 anyhow = "1"

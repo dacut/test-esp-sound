@@ -229,6 +229,8 @@ dependencies = [
 [[package]]
 name = "const_format"
 version = "0.2.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7309d9b4d3d2c0641e018d449232f2e28f1b22933c137f157d3dbc14228b8c0e"
 dependencies = [
  "const_format_proc_macros",
 ]
@@ -236,6 +238,8 @@ dependencies = [
 [[package]]
 name = "const_format_proc_macros"
 version = "0.2.29"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d897f47bf7270cf70d370f8f98c1abb6d2d4cf60a6845d30e05bfb90c6568650"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -417,6 +421,7 @@ dependencies = [
 [[package]]
 name = "embuild"
 version = "0.31.1"
+source = "git+https://github.com/esp-rs/embuild.git#e7202383f5b94f77f384b7b2207ae6206001db70"
 dependencies = [
  "anyhow",
  "bindgen",
@@ -435,20 +440,6 @@ dependencies = [
  "thiserror",
  "which",
  "xmas-elf",
-]
-
-[[package]]
-name = "embuild"
-version = "0.31.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "481bc7905b77810b66783faeb8c30d466fc7d128d7e4bdf2415e5f6ae1550dfe"
-dependencies = [
- "anyhow",
- "bitflags",
- "filetime",
- "log",
- "shlex",
- "thiserror",
 ]
 
 [[package]]
@@ -505,6 +496,7 @@ dependencies = [
 [[package]]
 name = "esp-idf-hal"
 version = "0.40.1"
+source = "git+https://github.com/dacut/esp-idf-hal?branch=i2s#8a31ddefef7a22512bdd4c95d0f07bcdb3465e89"
 dependencies = [
  "anyhow",
  "edge-executor",
@@ -512,7 +504,7 @@ dependencies = [
  "embedded-hal 0.2.7",
  "embedded-hal 1.0.0-alpha.9",
  "embedded-hal-nb",
- "embuild 0.31.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "embuild",
  "enumset",
  "esp-idf-sys",
  "heapless",
@@ -522,13 +514,14 @@ dependencies = [
 [[package]]
 name = "esp-idf-sys"
 version = "0.32.1"
+source = "git+https://github.com/dacut/esp-idf-sys?branch=i2s#f266507138a93fb6d0172c5b29211c2819d64ce5"
 dependencies = [
  "anyhow",
  "bindgen",
  "build-time",
  "cargo_metadata",
  "const_format",
- "embuild 0.31.1",
+ "embuild",
  "envy",
  "libc",
  "regex",
@@ -1168,7 +1161,7 @@ name = "test-esp-sound"
 version = "0.1.0"
 dependencies = [
  "anyhow",
- "embuild 0.31.1",
+ "embuild",
  "esp-idf-hal",
  "esp-idf-sys",
 ]
