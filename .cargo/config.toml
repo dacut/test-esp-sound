@@ -1,0 +1,9 @@
+[build]
+target = "xtensa-esp32s2-espidf"
+rustflags = "--cfg espidf_time64"
+
+[target.xtensa-esp32s2-espidf]
+linker = "ldproxy"
+
+[unstable]
+build-std = ["std", "panic_abort"]

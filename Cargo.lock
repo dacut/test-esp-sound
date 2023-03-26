@@ -434,6 +434,7 @@ dependencies = [
  "tempfile",
  "thiserror",
  "which",
+ "xmas-elf",
 ]
 
 [[package]]
@@ -1166,7 +1167,10 @@ dependencies = [
 name = "test-esp-sound"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "embuild 0.31.1",
  "esp-idf-hal",
+ "esp-idf-sys",
 ]
 
 [[package]]
@@ -1447,3 +1451,18 @@ name = "windows_x86_64_msvc"
 version = "0.42.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9aec5da331524158c6d1a4ac0ab1541149c0b9505fde06423b02f5ef0106b9f0"
+
+[[package]]
+name = "xmas-elf"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f820cc767d65b32eef9d7ce7201448f28501c59edc55d47b71375fea579fc2df"
+dependencies = [
+ "zero",
+]
+
+[[package]]
+name = "zero"
+version = "0.1.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2fe21bcc34ca7fe6dd56cc2cb1261ea59d6b93620215aefb5ea6032265527784"

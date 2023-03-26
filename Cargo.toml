@@ -7,6 +7,12 @@ edition = "2021"
 
 [dependencies]
 esp-idf-hal = { path = "../esp-idf-hal" }
+esp-idf-sys = { path = "../esp-idf-sys", features = [ "std", "native", "binstart" ] }
 
-[build]
-rustflags = "--cfg espidf_time64"
+[profile.dev]
+debug = true
+opt-level = "z"
+
+[build-dependencies]
+embuild = { path = "../embuild", features = ["elf"] }
+anyhow = "1"
