@@ -2,7 +2,13 @@
 target = "xtensa-esp32s2-espidf"
 rustflags = "--cfg espidf_time64"
 
+[target.xtensa-esp32-espidf]
+linker = "ldproxy"
+
 [target.xtensa-esp32s2-espidf]
+linker = "ldproxy"
+
+[target.xtensa-esp32s3-espidf]
 linker = "ldproxy"
 
 [unstable]
