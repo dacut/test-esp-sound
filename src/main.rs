@@ -1,129 +1,93 @@
 use {
-    core::{hint::spin_loop, sync::atomic::{AtomicBool, Ordering}, time::Duration},
+    core::time::Duration,
     esp_idf_hal::{
-        gpio::{Gpio1, Gpio2, Gpio4, AnyIOPin},
-        i2s::{config as I2sConfig, I2sStdDriver, I2sEvent, I2sTx, I2sStdTxCallback, I2sTxChannel },
+        gpio::AnyIOPin,
+        i2s::{config as I2sConfig, I2sStdDriver, I2sTx, I2sTxChannel, I2sTxSupported},
         prelude::*,
     },
+    esp_idf_svc::log::{set_target_level, EspLogger},
+    esp_idf_sys::EspError,
+    log::{debug, LevelFilter},
     std::f32::consts::TAU,
 };
 
 const TIMEOUT: Duration = Duration::from_millis(100);
-const SAMPLE_RATE_HZ: u32 = 48000;
+const SAMPLE_RATE_HZ: u32 = 16000;
+const OMEGA_INC: f32 = TAU / SAMPLE_RATE_HZ as f32;
 const BITS_PER_SAMPLE: I2sConfig::DataBitWidth = I2sConfig::DataBitWidth::Bits16;
+const DMA_BUFFERS: usize = 12;
+const DMA_FRAMES: usize = 240;
 
 struct SendSinewave {
-    samples: Vec<u8>,
+    freq: f32,
+    omega: f32, // t * TAU
+    buffers: Vec<u8>,
 }
 
-struct SendSinewaveCallback {
-    ready: AtomicBool,
-}
-
-impl Default for SendSinewaveCallback {
-    fn default() -> Self {
+impl SendSinewave {
+    fn new(freq: f32) -> Self {
         Self {
-            ready: AtomicBool::new(true),
+            freq,
+            omega: 0.0,
+            buffers: vec![0; DMA_BUFFERS * DMA_FRAMES * 4],
         }
-    }
-}
-
-impl I2sStdTxCallback for SendSinewaveCallback {
-    fn on_sent(&self, _port: u8, _event: &I2sEvent) -> bool {
-        self.ready.store(true, Ordering::Relaxed);
-        false
     }
 }
 
 impl SendSinewave {
-    fn new(_freq: u32) -> Self {
-        // let mut sample_size = SAMPLE_RATE_HZ as usize / freq as usize;
-        // let period_remainder = SAMPLE_RATE_HZ as usize % freq as usize;
+    pub fn send<Dir: I2sTxSupported>(
+        &mut self,
+        driver: &mut I2sStdDriver<'_, Dir>,
+        n_buffers: usize,
+    ) -> Result<usize, EspError> {
+        for i in (0..n_buffers * DMA_FRAMES * 4).step_by(4) {
+            let lsample = ((self.omega * self.freq).sin() * 0.5 * (i16::MAX as f32)) as u16;
 
-        // if period_remainder > 0 {
-        //     // Extend the sample so we get an integral number of periods.
-        //     sample_size += freq as usize / period_remainder + 1;
-        // }
+            self.buffers[i] = (lsample & 0x00ff) as u8;
+            self.buffers[i + 1] = ((lsample & 0xff00) >> 8) as u8;
+            self.buffers[i + 2] = (lsample & 0x00ff) as u8;
+            self.buffers[i + 3] = ((lsample & 0xff00) >> 8) as u8;
+            self.omega += OMEGA_INC;
 
-        // let mut samples: Vec<u8> = vec![0; sample_size * 4];y
-
-        // let omega = TAU * freq as f32;
-
-        // for i in (0..sample_size).step_by(4) {
-        //     let t = omega * freq as f32 * i as f32;
-        //     let value = ((omega * t * 0.2).sin() * i16::MAX as f32) as i16;
-        //     let value_high = ((value as u16) >> 8) as u8;
-        //     let value_low = ((value as u16) & 0xff) as u8;
-
-        //     samples[i] = value_high;
-        //     samples[i + 1] = value_low;
-        //     samples[i + 2] = value_high;
-        //     samples[i + 3] = value_low;
-        // }
-
-        // Self {
-        //     samples,
-        // }
-        let mut samples = vec![0; 4096];
-        for i in (0..samples.len()).step_by(4) {
-            samples[i] = 0b10101010;
-            samples[i + 1] = 0b10101010;
-            samples[i + 2] = 0b11001100;
-            samples[i + 3] = 0b11001100;
-        }
-
-        Self { samples }
-    }
-
-    fn run_forever(&mut self, tx_channel: &mut dyn I2sTxChannel) {
-        loop {
-            let mut total_written = 0;
-            while total_written < self.samples.len() {
-                let n_written = match tx_channel.write(&self.samples[total_written..], TIMEOUT) {
-                    Ok(n_written) => n_written,
-                    Err(e) => {
-                        println!("Error writing to I2S: {e}");
-                        return;
-                    }
-                };
-                total_written += n_written;
+            if self.omega >= TAU {
+                self.omega -= TAU;
             }
         }
+
+        driver.write(&self.buffers[..n_buffers * DMA_FRAMES * 4], TIMEOUT)
     }
 }
 
 fn main() {
     esp_idf_sys::link_patches();
+    EspLogger::initialize_default();
+    set_target_level("*", LevelFilter::Trace);
+
+    std::env::set_var("RUST_BACKTRACE", "1");
+    debug!("esp_log_write: Starting application");
 
     println!("Starting application");
     let peripherals = Peripherals::take().unwrap();
-    let config = I2sConfig::Config::default();
-    let tx_clk_config = I2sConfig::StdClkConfig::from_sample_rate_hz(SAMPLE_RATE_HZ);
-    let tx_slot_config =
-        I2sConfig::StdSlotConfig::philips_slot_default(BITS_PER_SAMPLE, I2sConfig::SlotMode::Stereo);
-    let tx_gpio_config = I2sConfig::StdGpioConfig::default();
-    let std_config = I2sConfig::StdConfig::new(config, tx_clk_config, tx_slot_config, tx_gpio_config);
+    let i2s_config = I2sConfig::Config::default().dma_desc(DMA_BUFFERS as u32);
+    let clk_config = I2sConfig::StdClkConfig::from_sample_rate_hz(SAMPLE_RATE_HZ);
+    let gpio_config = I2sConfig::StdGpioConfig::default();
+    let slot_config = I2sConfig::StdSlotConfig::philips_slot_default(BITS_PER_SAMPLE, I2sConfig::SlotMode::Stereo);
+    let std_config = I2sConfig::StdConfig::new(i2s_config, clk_config, slot_config, gpio_config);
 
     println!("Initializing I2S driver");
-    let bclk = unsafe { Gpio2::new() };
-    let dout = unsafe { Gpio4::new() };
-    let ws = unsafe { Gpio1::new() };
-    let mut i2s = I2sStdDriver::<I2sTx>::new_tx(peripherals.i2s0, std_config, bclk, Some(dout), AnyIOPin::none(), ws, None).unwrap();
+    let bclk = peripherals.pins.gpio2;
+    let dout = peripherals.pins.gpio4;
+    let ws = peripherals.pins.gpio1;
+    let mut i2s =
+        I2sStdDriver::<I2sTx>::new_tx(peripherals.i2s0, std_config, bclk, Some(dout), AnyIOPin::none(), ws).unwrap();
 
-    println!("Enabling transmit channel");
-    let mut send_sine = SendSinewave::new(256); // middle C
-    // let callback = SendSinewaveCallback::default();
+    let mut send_sine = SendSinewave::new(440.0);
+    println!("Enabling output");
     i2s.tx_enable().unwrap();
 
-    std::env::set_var("RUST_BACKTRACE", "1");
     println!("Starting transmission");
-    send_sine.run_forever(&mut i2s);
-
-    println!("Program exited unexpectedly. Halting.");
-    i2s.tx_disable().unwrap();
-    drop(i2s);
 
     loop {
-        spin_loop();
+        send_sine.send(&mut i2s, DMA_BUFFERS).unwrap();
     }
 }

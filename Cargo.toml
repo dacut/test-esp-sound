@@ -10,13 +10,16 @@ readme = "README.md"
 repository = "https://github.com/dacut/test-esp-sound"
 
 [patch.crates-io]
+embedded-svc = { git = "https://github.com/esp-rs/embedded-svc.git" }
 esp-idf-hal = { git = "https://github.com/dacut/esp-idf-hal", branch = "i2s" }
-esp-idf-sys = { git = "https://github.com/dacut/esp-idf-sys", branch = "i2s" }
-embuild = { git = "https://github.com/esp-rs/embuild.git" }
+esp-idf-sys = { git = "https://github.com/esp-rs/esp-idf-sys", branch = "master" }
+esp-idf-svc = { git = "https://github.com/esp-rs/esp-idf-svc", branch = "master" }
 
 [dependencies]
-esp-idf-hal = { git = "https://github.com/dacut/esp-idf-hal", branch = "i2s" }
-esp-idf-sys = { git = "https://github.com/dacut/esp-idf-sys", branch = "i2s", features = [ "std", "native", "binstart" ] }
+esp-idf-hal = { version = "0.40.1" }
+esp-idf-sys = { version = "0.32.1", default-features = false, features = ["std", "binstart", "native"] }
+esp-idf-svc = { version = "0.45.0" }
+log = { version = "0.4", default-features = false }
 
 [profile.dev]
 debug = true
